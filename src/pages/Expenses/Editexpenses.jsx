@@ -1,50 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Input,
-    Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Button,
 } from "@nextui-org/react";
 import userRequest from "../../utils/userRequest";
 import toast from "react-hot-toast";
 
-const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
+const Editexpenses = ({ isOpen, onClose, apirefetch, selectionexpense }) => {
   const [loading, setLoading] = useState(false);
-  const [newexpenses, setnewexpenses] = useState({
+  const [Editexpenses, setEditexpenses] = useState({
     item: "",
     amount: "0",
     description: "",
   });
 
-    const handleAdd = async () => {
-      setLoading(true);
-      try {
-        await userRequest.post("/expenses", {
-          item: newexpenses.item,
-          amount: newexpenses.amount,
-          description: newexpenses.description,
-        });
-        setnewexpenses({
-          item: "",
-          amount: "0",
-          description: "",
-        });
-        onClose(false);
-        setLoading(false);
-        toast.success("Expenses added successfully!");
-        apirefetch();
-      } catch (error) {
-        setLoading(false);
-        toast.error(
-          error?.response?.data?.message ||
-            error.message ||
-            "Failed to add Expenses."
-        );
-      }
-    };
+   useEffect(() => {
+     if (selectionexpense) {
+       setEditexpenses({
+         item: selectionexpense.item || "",
+         amount: selectionexpense.amount || "0",
+         description: selectionexpense.description || "",
+       });
+     }
+     
+   }, [selectionexpense]);
+
+  const handleAdd = async () => {
+    setLoading(true);
+    try {
+      await userRequest.put(`/expenses/${selectionexpense?._id || ""}`, {
+        item: Editexpenses.item,
+        amount: Editexpenses.amount,
+        description: Editexpenses.description,
+      });
+      setEditexpenses({
+        item: "",
+        amount: "0",
+        description: "",
+      });
+      onClose(false);
+      setLoading(false);
+      toast.success("Expenses added successfully!");
+      apirefetch();
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        error?.response?.data?.message || error.message || "Failed to add Expenses."
+      );
+    }
+  };
 
   return (
     <Modal
@@ -62,9 +71,9 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
               label="Item Name"
               labelPlacement="outside"
               placeholder="Enter item name"
-              value={newexpenses.item}
+              value={Editexpenses.item}
               onChange={(e) =>
-                setnewexpenses({ ...newexpenses, item: e.target.value })
+                setEditexpenses({ ...Editexpenses, item: e.target.value })
               }
               variant="bordered"
               required
@@ -75,9 +84,9 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
                 labelPlacement="outside"
                 placeholder="Enter Amount"
                 type="number"
-                value={newexpenses.amount}
+                value={Editexpenses.amount}
                 onChange={(e) =>
-                  setnewexpenses({ ...newexpenses, amount: e.target.value })
+                  setEditexpenses({ ...Editexpenses, amount: e.target.value })
                 }
                 variant="bordered"
                 required
@@ -94,10 +103,10 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
                 }}
                 labelPlacement="outside"
                 placeholder="Enter Expenses description"
-                value={newexpenses.description}
+                value={Editexpenses.description}
                 onChange={(e) =>
-                  setnewexpenses({
-                    ...newexpenses,
+                  setEditexpenses({
+                    ...Editexpenses,
                     description: e.target.value,
                   })
                 }
@@ -116,7 +125,7 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
             isLoading={loading}
             disabled={loading}
           >
-            Add Expenses
+            Edit Expenses
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -124,4 +133,4 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
   );
 };
 
-export default Addexpenses;
+export default Editexpenses;

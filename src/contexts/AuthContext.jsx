@@ -32,10 +32,10 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-      const userData = response?.data?.data || "";
+      const userData = response?.data?.user || "";
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", userData?.token);
+      localStorage.setItem("token", response?.data?.token);
       toast.success("Login successful!");
       return true;
     } catch (error) {

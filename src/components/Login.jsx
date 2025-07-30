@@ -18,8 +18,14 @@ const Login = () => {
     setLoading(true);
     setError('');
     const success = await login(email, password);
+    // console.log('success', success);
+    const token= localStorage.getItem("token");
+    //  const savedUser = localStorage.getItem("user");
+    //  console.log('savedUser', savedUser);
+    //   console.log('token', token);
+     
     setLoading(false);
-    if (success) {
+    if (success === true) {
       navigator("/expenses");
     } else {
       setError("Invalid email or password");
