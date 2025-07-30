@@ -61,6 +61,7 @@ const Expenses = () => {
   const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState(null);
+  const [totalamount, setTotalamount] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const navigate = useNavigate();
@@ -83,6 +84,17 @@ const Expenses = () => {
     const res = await userRequest.get(url);
     return res.data; // Return the whole response
   };
+      const fetchtotalamout = async () => {
+        try {
+          const response = await userRequest.get(`/expenses/total`);
+          const datas = response?.data?.data || "";
+          setTotalamount(datas);
+          console.log(datas, "datas");
+        } catch (error) {
+          console.error("Error fetching customer history:", error);
+        }
+      };
+
 
   // 2. Use correct destructuring
   const {
@@ -98,10 +110,22 @@ const Expenses = () => {
 
   useEffect(() => {
     refetch();
+    fetchtotalamout()
   }, [dateFilter, startDate, page]);
+
+  const bothapi =() => {
+     refetch();
+     fetchtotalamout();    
+  }
 
   const expensesdata = expensesResponse.data || [];
   const total = expensesResponse.total || 0;
+
+  useEffect(() => {
+    fetchtotalamout()
+  }, [])
+  
+
 
 
     const handleDelete = (expence) => {
@@ -121,6 +145,7 @@ const Expenses = () => {
           await userRequest.delete(`/expenses/${expence?._id || ""}`);
           toast.success("The Expenses has been deleted.");
           refetch();
+          fetchtotalamout()
         } catch (error) {
           toast.error(error?.response?.data?.message || "Failed to delete the Expenses.");
         }
@@ -169,8 +194,7 @@ const Expenses = () => {
             <div className="mx-3 text-start mt-2">
               <div className="text-sm text-gray-600">Sales</div>
               <div className="text-2xl font-bold text-green-600">
-                Rs.
-                {/* {expensesdata.reduce((sum, txn) => sum + txn.amount, 0).toLocaleString()} */}
+                Rs. {totalamount.total || 0}
               </div>
             </div>
           </div>
@@ -319,13 +343,13 @@ const Expenses = () => {
       <Addexpenses
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        apirefetch={refetch}
+        apirefetch={bothapi}
       />
       <Editexpenses
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         selectionexpense={selectedExpense}
-        apirefetch={refetch}
+        apirefetch={bothapi}
       />
     </div>
   );
