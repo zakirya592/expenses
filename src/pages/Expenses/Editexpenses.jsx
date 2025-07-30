@@ -64,7 +64,7 @@ const Editexpenses = ({ isOpen, onClose, apirefetch, selectionexpense }) => {
       hideCloseButton={false}
     >
       <ModalContent>
-        <ModalHeader>Add New Expenses</ModalHeader>
+        <ModalHeader>Edit Expenses</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <Input

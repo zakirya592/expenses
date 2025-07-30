@@ -74,13 +74,12 @@ const Expenses = () => {
   // 1. Return the full response object
   const fetchexpenses = async () => {
     let url = `/expenses?page=${page}&limit=${limit}`;
-    if (dateFilter !== "all") {
-      if (dateFilter === "custom" && startDate) {
-        url += `&year=${startDate}`;
-      } else {
-        url += `&year=${dateFilter}`;
-      }
-    }
+   if (dateFilter !== "all") {
+     const yearParam = dateFilter === "custom" ? startDate : dateFilter;
+     if (yearParam) {
+       url += `&year=${yearParam}`;
+     }
+   }
     const res = await userRequest.get(url);
     return res.data; // Return the whole response
   };
