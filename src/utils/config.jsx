@@ -1,1 +1,1 @@
-export const baseUrl = `https://point-of-sales-sigma.vercel.app/api`;
+export const baseUrl = `https://expense-tracker-backend-tau-one.vercel.app/api`;
