@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardBody, Input, Button, Divider } from '@nextui-org/react';
 import { FaUser, FaLock, FaStore, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,12 +6,20 @@ import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [email, setemail] = useState('');
+  const navigator = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigator('/expenses');
+    }
+  }, [navigator]);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // <-- Add this
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
-  const navigator = useNavigate();
+  // const navigator = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
