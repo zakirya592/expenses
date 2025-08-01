@@ -1,8 +1,18 @@
-    {
-      "rewrites": [
-        {
-          "source": "/(.*)",
-          "destination": "/index.html"
-        }
-      ]
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "/index.html",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/index.html"
+      }
+    ],
+    "env": {
+      "PORT": "8080"
     }
+  }
