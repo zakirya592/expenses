@@ -19,7 +19,7 @@ import {
   Modal
 } from '@nextui-org/react';
 import autoTable from "jspdf-autotable";
-import { FaCalendarAlt, FaEdit, FaPrint, FaSignOutAlt, FaTrash } from 'react-icons/fa';
+import { FaCalendarAlt, FaEdit, FaPrint, FaSignOutAlt, FaTrash, FaUserPlus } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ import Addexpenses from './Addexpenses';
 import Swal from "sweetalert2";
 import toast from 'react-hot-toast';
 import Editexpenses from './Editexpenses';
+import AddCustomer from './AddCustomer';
 
 
 // BottomContent component outside
@@ -72,6 +73,7 @@ const Expenses = () => {
   const [totalamount, setTotalamount] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -278,6 +280,13 @@ const Expenses = () => {
             <div className="mt-7 me-3 flex gap-2">
               <Button color="success" onPress={() => setShowAddModal(true)}>
                 Add expenses
+              </Button>
+              <Button 
+                color="secondary" 
+                startContent={<FaUserPlus />}
+                onPress={() => setShowAddCustomerModal(true)}
+              >
+                Add Customer
               </Button>
               <Button
                 color="primary"
@@ -551,6 +560,11 @@ const Expenses = () => {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         selectionexpense={selectedExpense}
+        apirefetch={bothapi}
+      />
+      <AddCustomer
+        isOpen={showAddCustomerModal}
+        onClose={() => setShowAddCustomerModal(false)}
         apirefetch={bothapi}
       />
     </div>
