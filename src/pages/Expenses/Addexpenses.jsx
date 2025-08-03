@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Modal,
     ModalContent,
@@ -7,17 +7,36 @@ import {
     ModalFooter,
     Input,
     Button,
+    Select,
+    SelectItem,
 } from "@nextui-org/react";
 import userRequest from "../../utils/userRequest";
 import toast from "react-hot-toast";
 
 const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
   const [loading, setLoading] = useState(false);
+  const [customers, setCustomers] = useState([]);
   const [newexpenses, setnewexpenses] = useState({
     item: "",
     amount: "0",
     description: "",
+    customer: "",
   });
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await userRequest.get("/customers");
+        setCustomers(response.data.data);
+      } catch (error) {
+        toast.error("Failed to fetch customers");
+      }
+    };
+
+    if (isOpen) {
+      fetchCustomers();
+    }
+  }, [isOpen]);
 
     const handleAdd = async () => {
       setLoading(true);
@@ -26,11 +45,13 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
           item: newexpenses.item,
           amount: newexpenses.amount,
           description: newexpenses.description,
+          customer: newexpenses.customer,
         });
         setnewexpenses({
           item: "",
           amount: "0",
           description: "",
+          customer: "",
         });
         onClose(false);
         setLoading(false);
@@ -103,6 +124,30 @@ const Addexpenses = ({ isOpen, onClose, apirefetch }) => {
                 }
                 variant="bordered"
               />
+            </div>
+            <div className="my-20">
+              <Select
+                label="Customer"
+                labelPlacement="outside"
+                placeholder="Select a customer"
+                value={newexpenses.customer}
+                onChange={(e) =>
+                  setnewexpenses({
+                    ...newexpenses,
+                    customer: e.target.value,
+                  })
+                }
+                variant="bordered"
+                classNames={{
+                  label: "my-2",
+                }}
+              >
+                {customers.map((customer) => (
+                  <SelectItem key={customer._id} value={customer._id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </Select>
             </div>
           </div>
         </ModalBody>
