@@ -3,7 +3,6 @@ import {
   Card,
   CardBody,
   Button,
-  Input,
   Table,
   TableHeader,
   TableColumn,
@@ -14,17 +13,16 @@ import {
   Tooltip,
   Pagination,
 } from '@nextui-org/react';
-import { FaEdit, FaEye, FaSignOutAlt, FaTrash, FaUserPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaSignOutAlt } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Swal from "sweetalert2";
 import toast from 'react-hot-toast';
-import AddCustomer from './AddCustomer';
+import AddCustomer from '../Expenses/AddCustomer';
 
-
-// BottomContent component outside
+// BottomContent component
 function BottomContent({ total, page, setPage }) {
   if (!total) return null;
   const totalPages = Math.ceil(total / 10); // 10 is your limit per page
@@ -50,15 +48,11 @@ function BottomContent({ total, page, setPage }) {
   );
 }
 
-const Expenses = () => {
+const CustomerPage = () => {
   const { user, logout } = useAuth();
-  const [itemSearch, setItemSearch] = useState("");
-  const [selectedExpense, setSelectedExpense] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
-  const [totalamount, setTotalamount] = useState({ total: 0, count: 0 });
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -69,59 +63,22 @@ const Expenses = () => {
   // Fetch customers
   const fetchCustomers = async () => {
     let url = `/customers?page=${page}&limit=${limit}`;
-    
-    // Keep search functionality if needed
-    if (itemSearch) {
-      url += `&nameSearch=${itemSearch}`;
-    }
-
     const res = await userRequest.get(url);
-    return res.data; // Return the whole response
-  };
-  const fetchtotalamout = async () => {
-    try {
-      const response = await userRequest.get(`/expenses/total`);
-      const data = response?.data?.data || { total: 0, count: 0 };
-      setTotalamount(data);
-    } catch (error) {
-      console.error("Error fetching total expenses:", error);
-      setTotalamount({ total: 0, count: 0 });
-    }
+    return res.data;
   };
 
-  // Use correct destructuring
   const {
     data: customersResponse = { data: [], total: 0 },
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: [
-      "customers",
-      page,
-      itemSearch,
-    ],
+    queryKey: ["customers", page],
     queryFn: fetchCustomers,
     keepPreviousData: true,
   });
 
-  useEffect(() => {
-    refetch();
-  }, [
-    page,
-    itemSearch,
-  ]);
-
-  const bothapi = () => {
-    refetch();
-    fetchtotalamout();
-  };
-
   const customersData = customersResponse.data || [];
   const total = customersResponse.total || 0;
-
-  useEffect(() => {
-    fetchtotalamout();
-  }, []);
 
   const handleDelete = (customer) => {
     Swal.fire({
@@ -137,9 +94,8 @@ const Expenses = () => {
       if (result.isConfirmed) {
         try {
           await userRequest.delete(`/customers/${customer?._id || ""}`);
-          toast.success("The customer has been deleted.");
+          toast.success("Customer has been deleted.");
           refetch();
-          fetchtotalamout();
         } catch (error) {
           toast.error(
             error?.response?.data?.message || "Failed to delete the customer."
@@ -149,60 +105,8 @@ const Expenses = () => {
     });
   };
 
-  const openEditModal = (customer) => {
-    setSelectedExpense(customer);
-    setShowEditModal(true);
-  };
-  
   const handleViewDetails = (customerId) => {
     navigate(`/customer-details/${customerId}`);
-  };
-
-  // PDF export function
-  const exportToPdf = (data, filename) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-  const totalAmount = data.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-
-  const titleText = filename || "Expenses Report";
-  const totalText = `Total: Rs. ${totalAmount.toFixed(2)}`;
-
-  doc.setFontSize(16);
-  doc.setTextColor(40, 40, 40);
-  doc.text(titleText, 10, 20); // Left side
-
-  doc.setFontSize(14);
-  doc.setTextColor(22, 160, 133); // Stylish green color
-  const totalTextWidth = doc.getTextWidth(totalText);
-  doc.text(totalText, pageWidth - totalTextWidth - 10, 20); //
-
-
-    const headers = [["#", "Item", "Date", "Description", "Amount"]];
-    const rows = data.map((row, index) => [
-      index + 1,
-      row.item || "",
-      new Date(row.date).toLocaleDateString(),
-      row.description || "",
-      row.amount || "",
-    ]);
-    autoTable(doc, {
-      startY: 30,
-      head: headers,
-      body: rows,
-      theme: "grid",
-      headStyles: { fillColor: [22, 160, 133] },
-      styles: { fontSize: 10, cellPadding: 3 },
-    });
-
-    return doc;
-  };
-
-  const viewPdfInNewTab = (data, filename) => {
-    const doc = exportToPdf(data, filename);
-    const blob = doc.output("blob");
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 10000); // revoke after 10s
   };
 
   return (
@@ -214,6 +118,12 @@ const Expenses = () => {
             ex<span className="text-blue-600">pen</span>ses
           </h1>
           <div className="flex items-center gap-6">
+            <button
+              onClick={() => navigate('/expenses')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow"
+            >
+              Expenses
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md shadow"
@@ -235,51 +145,13 @@ const Expenses = () => {
             <div className="mt-7 me-3 flex gap-2">
               <Button 
                 color="secondary" 
-                startContent={<FaUserPlus />}
                 onPress={() => setShowAddCustomerModal(true)}
               >
                 Add Customer
               </Button>
             </div>
-            <div className="mx-3 text-start mt-2">
-              <div className="text-sm text-gray-600">Total Expenses</div>
-              <div className="text-2xl font-bold text-green-600">
-                Rs. {totalamount.total || 0}
-              </div>
-              <div className="text-xs text-gray-500">
-                Count: {totalamount.count || 0}
-              </div>
-            </div>
           </div>
         </div>
-
-        {/* Filters */}
-        <Card>
-          <CardBody>
-            <div className="flex flex-wrap gap-4">
-              <div>
-                <Input
-                  placeholder="Search customer name..."
-                  value={itemSearch}
-                  onChange={(e) => setItemSearch(e.target.value)}
-                  className="w-64"
-                />
-              </div>
-              <div>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  onPress={() => {
-                    setItemSearch("");
-                    setPage(1);
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
 
         {/* Customers Table */}
         <Table
@@ -342,7 +214,7 @@ const Expenses = () => {
                         variant="light"
                         color="warning"
                         startContent={<FaEdit />}
-                        onPress={() => openEditModal(customer)}
+                        onPress={() => console.log("Edit", customer)}
                       >
                         Edit
                       </Button>
@@ -365,16 +237,15 @@ const Expenses = () => {
             ))}
           </TableBody>
         </Table>
-        {/* 3. Place BottomContent outside the Table */}
         <BottomContent total={total} page={page} setPage={setPage} />
       </div>
       <AddCustomer
         isOpen={showAddCustomerModal}
         onClose={() => setShowAddCustomerModal(false)}
-        apirefetch={bothapi}
+        apirefetch={refetch}
       />
     </div>
   );
 };
 
-export default Expenses;
+export default CustomerPage;
