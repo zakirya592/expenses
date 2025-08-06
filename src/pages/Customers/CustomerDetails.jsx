@@ -248,33 +248,34 @@ const CustomerDetails = () => {
     <div>
       {/* Top Navbar */}
       <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800 tracking-tight mb-2 sm:mb-0">
             ex<span className="text-blue-600">pen</span>ses
           </h1>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => navigate('/customers')}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow"
             >
               All Customers
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md shadow"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md shadow"
             >
               <FaSignOutAlt />
-              Logout
+              <span className="hidden xs:inline">Logout</span>
             </button>
           </div>
         </div>
       </nav>
       <div className="p-1 sm:p-1 md:p-6 lg:p-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center flex-wrap">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center flex-wrap gap-4 sm:gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Button
               isIconOnly
+              size="sm"
               color="default"
               variant="light"
               aria-label="Back"
@@ -283,13 +284,14 @@ const CustomerDetails = () => {
               <FaArrowLeft />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">{customerName}</h1>
-              <p className="text-gray-600">Customer Expenses</p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">{customerName}</h1>
+              <p className="text-sm text-gray-600">Customer Expenses</p>
             </div>
           </div>
-          <div className="text-right space-y-2 flex flex-row flex-wrap">
-            <div className="mt-7 me-3 flex gap-2">
+          <div className="flex flex-wrap justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-4">
+            <div className="flex flex-wrap gap-2">
               <Button 
+                size="sm"
                 color="success" 
                 startContent={<FaPlus />}
                 onPress={() => setShowAddExpenseModal(true)}
@@ -297,6 +299,7 @@ const CustomerDetails = () => {
                 Add Expense
               </Button>
               <Button 
+                size="sm"
                 color="primary" 
                 startContent={<FaFilePdf />}
                 onPress={() => setShowIndexRangeModal(true)}
@@ -304,9 +307,9 @@ const CustomerDetails = () => {
                 Generate PDF
               </Button>
             </div>
-            <div className="mx-3 text-start mt-2">
-              <div className="text-sm text-gray-600">Total Expenses</div>
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-start">
+              <div className="text-xs sm:text-sm text-gray-600">Total Expenses</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
                 Rs. {totalAmount.toFixed(2)}
               </div>
             </div>
@@ -314,18 +317,22 @@ const CustomerDetails = () => {
         </div>
 
         {/* Expenses Table */}
-        <Table
-          aria-label="Customer expenses table"
-          className="h-[400px] overflow-y-auto"
-        >
-          <TableHeader>
-            <TableColumn>Sl No</TableColumn>
-            <TableColumn>ITEM</TableColumn>
-            <TableColumn>DATE & TIME</TableColumn>
-            <TableColumn>DESCRIPTION</TableColumn>
-            <TableColumn>AMOUNT</TableColumn>
-            <TableColumn>ACTIONS</TableColumn>
-          </TableHeader>
+        <div className="max-w-full overflow-x-auto">
+          <Table
+            aria-label="Customer expenses table"
+            className="h-[400px] overflow-y-auto"
+            classNames={{
+              wrapper: "min-w-[800px]" // Ensures table has minimum width for scrolling on small screens
+            }}
+          >
+            <TableHeader>
+              <TableColumn className="text-xs sm:text-sm">Sl No</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">ITEM</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">DATE & TIME</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">DESCRIPTION</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">AMOUNT</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">ACTIONS</TableColumn>
+            </TableHeader>
           <TableBody
             isLoading={isLoading}
             loadingContent={
@@ -355,16 +362,18 @@ const CustomerDetails = () => {
                   {expense.amount}
                 </TableCell>
                 <TableCell>
-                  <div className="relative flex items-center gap-2">
+                  <div className="relative flex items-center gap-1 flex-wrap">
                     <Tooltip content="Edit Expense">
                       <Button
                         size="sm"
                         variant="light"
                         color="warning"
-                        startContent={<FaEdit />}
+                        isIconOnly
+                        className="min-w-0 sm:min-w-unit-10"
                         onPress={() => handleEditExpense(expense)}
                       >
-                        Edit
+                        <FaEdit className="text-xs sm:text-sm" />
+                        <span className="hidden sm:inline ml-1">Edit</span>
                       </Button>
                     </Tooltip>
                     <Tooltip color="danger" content="Delete Expense">
@@ -372,10 +381,12 @@ const CustomerDetails = () => {
                         size="sm"
                         variant="light"
                         color="danger"
-                        startContent={<FaTrash />}
+                        isIconOnly
+                        className="min-w-0 sm:min-w-unit-10"
                         onPress={() => handleDeleteExpense(expense)}
                       >
-                        Delete
+                        <FaTrash className="text-xs sm:text-sm" />
+                        <span className="hidden sm:inline ml-1">Delete</span>
                       </Button>
                     </Tooltip>
                   </div>
@@ -383,7 +394,8 @@ const CustomerDetails = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
         <BottomContent total={total} page={page} setPage={setPage} />
       </div>
       <AddExpenseForCustomer

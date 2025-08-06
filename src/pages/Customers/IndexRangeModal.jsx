@@ -41,11 +41,18 @@ const IndexRangeModal = ({ isOpen, onClose, onGenerate, maxIndex }) => {
       onClose={onClose}
       placement="center"
       className="bg-white dark:bg-gray-800"
+      size="sm"
+      classNames={{
+        base: "mx-2",
+        header: "pb-0",
+        body: "py-3",
+        footer: "pt-0"
+      }}
     >
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader className="flex flex-col gap-1 text-xl font-bold">
+            <ModalHeader className="flex flex-col gap-1 text-lg sm:text-xl font-bold">
               Select Expense Range for PDF
             </ModalHeader>
             <ModalBody>

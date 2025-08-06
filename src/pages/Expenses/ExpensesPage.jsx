@@ -209,31 +209,32 @@ const Expenses = () => {
     <div>
       {/* Top Navbar */}
       <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800 tracking-tight">
             ex<span className="text-blue-600">pen</span>ses
           </h1>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md shadow"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md shadow"
             >
               <FaSignOutAlt />
-              Logout
+              <span className="hidden xs:inline">Logout</span>
             </button>
           </div>
         </div>
       </nav>
       <div className="p-1 sm:p-1 md:p-6 lg:p-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center flex-wrap">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center flex-wrap gap-4 sm:gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Customers</h1>
-            <p className="text-gray-600">View and manage your customers</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">Customers</h1>
+            <p className="text-sm text-gray-600">View and manage your customers</p>
           </div>
-          <div className="text-right space-y-2 flex flex-row flex-wrap">
-            <div className="mt-7 me-3 flex gap-2">
+          <div className="flex flex-wrap justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-4">
+            <div className="flex flex-wrap">
               <Button 
+                size="sm"
                 color="secondary" 
                 startContent={<FaUserPlus />}
                 onPress={() => setShowAddCustomerModal(true)}
@@ -241,9 +242,9 @@ const Expenses = () => {
                 Add Customer
               </Button>
             </div>
-            <div className="mx-3 text-start mt-2">
-              <div className="text-sm text-gray-600">Total Expenses</div>
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-start">
+              <div className="text-xs sm:text-sm text-gray-600">Total Expenses</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
                 Rs. {totalamount.total || 0}
               </div>
               <div className="text-xs text-gray-500">
@@ -255,20 +256,22 @@ const Expenses = () => {
 
         {/* Filters */}
         <Card>
-          <CardBody>
-            <div className="flex flex-wrap gap-4">
-              <div>
+          <CardBody className="py-2 px-2 sm:px-4">
+            <div className="flex flex-wrap gap-2 sm:gap-4">
+              <div className="w-full sm:w-auto">
                 <Input
                   placeholder="Search customer name..."
                   value={itemSearch}
                   onChange={(e) => setItemSearch(e.target.value)}
-                  className="w-64"
+                  className="w-full sm:w-64"
+                  size="sm"
                 />
               </div>
               <div>
                 <Button
                   color="danger"
                   variant="flat"
+                  size="sm"
                   onPress={() => {
                     setItemSearch("");
                     setPage(1);
@@ -282,17 +285,21 @@ const Expenses = () => {
         </Card>
 
         {/* Customers Table */}
-        <Table
-          aria-label="Customers table"
-          className="h-[400px] overflow-y-auto"
-        >
-          <TableHeader>
-            <TableColumn>Sl No</TableColumn>
-            <TableColumn>NAME</TableColumn>
-            <TableColumn>CREATED DATE</TableColumn>
-            <TableColumn>UPDATED DATE</TableColumn>
-            <TableColumn>ACTIONS</TableColumn>
-          </TableHeader>
+        <div className="max-w-full overflow-x-auto">
+          <Table
+            aria-label="Customers table"
+            className="h-[400px] overflow-y-auto"
+            classNames={{
+              wrapper: "min-w-[800px]" // Ensures table has minimum width for scrolling on small screens
+            }}
+          >
+            <TableHeader>
+              <TableColumn className="text-xs sm:text-sm">Sl No</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">NAME</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">CREATED DATE</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">UPDATED DATE</TableColumn>
+              <TableColumn className="text-xs sm:text-sm">ACTIONS</TableColumn>
+            </TableHeader>
           <TableBody
             isLoading={isLoading}
             loadingContent={
@@ -323,16 +330,18 @@ const Expenses = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="relative flex items-center gap-2">
+                  <div className="relative flex items-center gap-1 flex-wrap">
                     <Tooltip content="View Details">
                       <Button
                         size="sm"
                         variant="light"
                         color="primary"
-                        startContent={<FaEye />}
+                        isIconOnly
+                        className="min-w-0 sm:min-w-unit-10"
                         onPress={() => handleViewDetails(customer._id)}
                       >
-                        View
+                        <FaEye className="text-xs sm:text-sm" />
+                        <span className="hidden sm:inline ml-1">View</span>
                       </Button>
                     </Tooltip>
                     
@@ -341,10 +350,12 @@ const Expenses = () => {
                         size="sm"
                         variant="light"
                         color="warning"
-                        startContent={<FaEdit />}
+                        isIconOnly
+                        className="min-w-0 sm:min-w-unit-10"
                         onPress={() => openEditModal(customer)}
                       >
-                        Edit
+                        <FaEdit className="text-xs sm:text-sm" />
+                        <span className="hidden sm:inline ml-1">Edit</span>
                       </Button>
                     </Tooltip>
 
@@ -353,10 +364,12 @@ const Expenses = () => {
                         size="sm"
                         variant="light"
                         color="danger"
-                        startContent={<FaTrash />}
+                        isIconOnly
+                        className="min-w-0 sm:min-w-unit-10"
                         onPress={() => handleDelete(customer)}
                       >
-                        Delete
+                        <FaTrash className="text-xs sm:text-sm" />
+                        <span className="hidden sm:inline ml-1">Delete</span>
                       </Button>
                     </Tooltip>
                   </div>
@@ -364,7 +377,8 @@ const Expenses = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
         {/* 3. Place BottomContent outside the Table */}
         <BottomContent total={total} page={page} setPage={setPage} />
       </div>
