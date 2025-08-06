@@ -43,12 +43,18 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
 
     setLoading(true);
     try {
+      // Create a full datetime with current time
+      const now = new Date();
+      const selectedDate = new Date(newExpense.date);
+      // Set the hours, minutes, seconds from current time to the selected date
+      selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+      
       await userRequest.post("/expenses", {
         item: newExpense.item,
         amount: newExpense.amount,
         description: newExpense.description,
         customer: customerId,
-        date: newExpense.date,
+        date: selectedDate.toISOString(), // Send as ISO string with current time
       });
       setNewExpense({
         item: "",
