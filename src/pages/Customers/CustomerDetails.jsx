@@ -13,7 +13,7 @@ import {
   Tooltip,
   Pagination,
 } from '@nextui-org/react';
-import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaFilePdf } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,6 +22,9 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import AddExpenseForCustomer from './AddExpenseForCustomer';
 import EditExpenseForCustomer from './EditExpenseForCustomer';
+import IndexRangeModal from './IndexRangeModal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // BottomContent component
 function BottomContent({ total, page, setPage }) {
@@ -58,6 +61,7 @@ const CustomerDetails = () => {
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showEditExpenseModal, setShowEditExpenseModal] = useState(false);
+  const [showIndexRangeModal, setShowIndexRangeModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -139,6 +143,106 @@ const CustomerDetails = () => {
       }
     });
   };
+  
+  const fetchAllExpenses = async () => {
+    try {
+      // Set a large limit to get all expenses
+      const url = `/customers/${customerId}/expenses?limit=1000`;
+      const response = await userRequest.get(url);
+      return response.data.data || [];
+    } catch (error) {
+      toast.error("Failed to fetch expenses");
+      return [];
+    }
+  };
+  
+  const getExpensesByIndexRange = async (startIndex, endIndex) => {
+    try {
+      const allExpenses = await fetchAllExpenses();
+      
+      // Convert to 0-based index for array slicing
+      const start = startIndex - 1;
+      const end = endIndex;
+      
+      // Slice the array to get expenses in the specified range
+      return allExpenses.slice(start, end);
+    } catch (error) {
+      toast.error("Failed to get expenses for the selected range");
+      return [];
+    }
+  };
+
+  const generatePDF = async (startIndex, endIndex) => {
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading("Generating PDF...");
+      
+      // Fetch expenses for the selected index range
+      const expenses = await getExpensesByIndexRange(startIndex, endIndex);
+      
+      if (expenses.length === 0) {
+        toast.dismiss(loadingToast);
+        toast.error("No expenses found for the selected range");
+        return;
+      }
+
+      // Create PDF document
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Calculate total amount
+      const totalAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+      
+      // Add title and index range
+      const titleText = `Expenses for ${customerName}`;
+      const rangeText = `Expenses: ${startIndex} to ${endIndex}`;
+      const totalText = `Total: Rs. ${totalAmount.toFixed(2)}`;
+      
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text(titleText, 10, 20);
+      
+      doc.setFontSize(12);
+      doc.text(rangeText, 10, 30);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(22, 160, 133);
+      const totalTextWidth = doc.getTextWidth(totalText);
+      doc.text(totalText, pageWidth - totalTextWidth - 10, 30);
+      
+      // Define table headers and rows
+      const headers = [["#", "Item", "Date", "Description", "Amount"]];
+      const rows = expenses.map((expense, index) => [
+        startIndex + index, // Start numbering from the startIndex
+        expense.item || "",
+        new Date(expense.date).toLocaleDateString(),
+        expense.description || "",
+        expense.amount || "",
+      ]);
+      
+      // Generate table
+      autoTable(doc, {
+        startY: 40,
+        head: headers,
+        body: rows,
+        theme: "grid",
+        headStyles: { fillColor: [22, 160, 133] },
+        styles: { fontSize: 10, cellPadding: 3 },
+      });
+      
+      // Open PDF in new tab
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 10000); // revoke after 10s
+      
+      toast.dismiss(loadingToast);
+      toast.success("PDF generated successfully");
+    } catch (error) {
+      toast.error("Failed to generate PDF");
+      console.error("PDF generation error:", error);
+    }
+  };
 
   return (
     <div>
@@ -191,6 +295,13 @@ const CustomerDetails = () => {
                 onPress={() => setShowAddExpenseModal(true)}
               >
                 Add Expense
+              </Button>
+              <Button 
+                color="primary" 
+                startContent={<FaFilePdf />}
+                onPress={() => setShowIndexRangeModal(true)}
+              >
+                Generate PDF
               </Button>
             </div>
             <div className="mx-3 text-start mt-2">
@@ -288,6 +399,12 @@ const CustomerDetails = () => {
         apirefetch={refetch}
         expense={selectedExpense}
         customerName={customerName}
+      />
+      <IndexRangeModal
+        isOpen={showIndexRangeModal}
+        onClose={() => setShowIndexRangeModal(false)}
+        onGenerate={generatePDF}
+        maxIndex={total}
       />
     </div>
   );
