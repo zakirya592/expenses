@@ -13,13 +13,15 @@ import {
   Tooltip,
   Pagination,
 } from '@nextui-org/react';
-import { FaArrowLeft, FaPlus, FaSignOutAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import AddExpenseForCustomer from './AddExpenseForCustomer';
+import EditExpenseForCustomer from './EditExpenseForCustomer';
 
 // BottomContent component
 function BottomContent({ total, page, setPage }) {
@@ -54,6 +56,8 @@ const CustomerDetails = () => {
   const [limit] = useState(10);
   const [customerName, setCustomerName] = useState("");
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [showEditExpenseModal, setShowEditExpenseModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -105,6 +109,36 @@ const CustomerDetails = () => {
   const expensesData = expensesResponse.data || [];
   const total = expensesResponse.total || 0;
   const totalAmount = expensesResponse.totalAmount || 0;
+
+  const handleEditExpense = (expense) => {
+    setSelectedExpense(expense);
+    setShowEditExpenseModal(true);
+  };
+
+  const handleDeleteExpense = (expense) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: `You will not be able to recover this expense: ${expense?.item || ""}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await userRequest.delete(`/expenses/${expense?._id || ""}`);
+          toast.success("The expense has been deleted.");
+          refetch();
+        } catch (error) {
+          toast.error(
+            error?.response?.data?.message || "Failed to delete the expense."
+          );
+        }
+      }
+    });
+  };
 
   return (
     <div>
@@ -179,6 +213,7 @@ const CustomerDetails = () => {
             <TableColumn>DATE & TIME</TableColumn>
             <TableColumn>DESCRIPTION</TableColumn>
             <TableColumn>AMOUNT</TableColumn>
+            <TableColumn>ACTIONS</TableColumn>
           </TableHeader>
           <TableBody
             isLoading={isLoading}
@@ -208,6 +243,32 @@ const CustomerDetails = () => {
                 <TableCell className="font-semibold">
                   {expense.amount}
                 </TableCell>
+                <TableCell>
+                  <div className="relative flex items-center gap-2">
+                    <Tooltip content="Edit Expense">
+                      <Button
+                        size="sm"
+                        variant="light"
+                        color="warning"
+                        startContent={<FaEdit />}
+                        onPress={() => handleEditExpense(expense)}
+                      >
+                        Edit
+                      </Button>
+                    </Tooltip>
+                    <Tooltip color="danger" content="Delete Expense">
+                      <Button
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        startContent={<FaTrash />}
+                        onPress={() => handleDeleteExpense(expense)}
+                      >
+                        Delete
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -219,6 +280,13 @@ const CustomerDetails = () => {
         onClose={() => setShowAddExpenseModal(false)}
         apirefetch={refetch}
         customerId={customerId}
+        customerName={customerName}
+      />
+      <EditExpenseForCustomer
+        isOpen={showEditExpenseModal}
+        onClose={() => setShowEditExpenseModal(false)}
+        apirefetch={refetch}
+        expense={selectedExpense}
         customerName={customerName}
       />
     </div>

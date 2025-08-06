@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   ModalContent,
@@ -13,59 +13,63 @@ import userRequest from "../../utils/userRequest";
 import toast from "react-hot-toast";
 import { FaCalendarAlt } from "react-icons/fa";
 
-const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, customerName }) => {
+const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customerName }) => {
   const [loading, setLoading] = useState(false);
-  const [newExpense, setNewExpense] = useState({
+  const [editedExpense, setEditedExpense] = useState({
     item: "",
     amount: "",
     description: "",
-    date: new Date().toISOString().split('T')[0], // Default to current date in YYYY-MM-DD format
+    date: new Date().toISOString().split('T')[0],
   });
+
+  useEffect(() => {
+    if (expense) {
+      setEditedExpense({
+        item: expense.item || "",
+        amount: expense.amount || "",
+        description: expense.description || "",
+        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      });
+    }
+  }, [expense]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setNewExpense({
-      ...newExpense,
+    setEditedExpense({
+      ...editedExpense,
       [name]: value,
     });
   };
 
-  const handleAdd = async () => {
-    if (!newExpense.item.trim()) {
+  const handleUpdate = async () => {
+    if (!editedExpense.item.trim()) {
       toast.error("Item name is required");
       return;
     }
 
-    if (!newExpense.amount || isNaN(newExpense.amount) || Number(newExpense.amount) <= 0) {
+    if (!editedExpense.amount || isNaN(editedExpense.amount) || Number(editedExpense.amount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
 
     setLoading(true);
     try {
-      await userRequest.post("/expenses", {
-        item: newExpense.item,
-        amount: newExpense.amount,
-        description: newExpense.description,
-        customer: customerId,
-        date: newExpense.date,
-      });
-      setNewExpense({
-        item: "",
-        amount: "",
-        description: "",
-        date: new Date().toISOString().split('T')[0],
+      await userRequest.put(`/expenses/${expense._id}`, {
+        item: editedExpense.item,
+        amount: editedExpense.amount,
+        description: editedExpense.description,
+        date: editedExpense.date,
       });
       onClose(false);
       setLoading(false);
-      toast.success("Expense added successfully!");
+      toast.success("Expense updated successfully!");
       if (apirefetch) apirefetch();
     } catch (error) {
       setLoading(false);
       toast.error(
         error?.response?.data?.message ||
           error.message ||
-          "Failed to add expense."
+          "Failed to update expense."
       );
     }
   };
@@ -81,7 +85,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
         {(onClose) => (
           <>
             <ModalHeader className="flex flex-col gap-1 text-xl font-bold">
-              Add Expense for {customerName}
+              Edit Expense for {customerName}
             </ModalHeader>
             <ModalBody>
               <div className="space-y-4">
@@ -92,7 +96,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
                     placeholder="Enter item name"
                     variant="bordered"
                     name="item"
-                    value={newExpense.item}
+                    value={editedExpense.item}
                     onChange={handleChange}
                     className="w-full"
                   />
@@ -104,7 +108,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
                     variant="bordered"
                     name="date"
                     type="date"
-                    value={newExpense.date}
+                    value={editedExpense.date}
                     onChange={handleChange}
                     className="w-full"
                     startContent={
@@ -119,7 +123,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
                     variant="bordered"
                     name="amount"
                     type="number"
-                    value={newExpense.amount}
+                    value={editedExpense.amount}
                     onChange={handleChange}
                     className="w-full"
                   />
@@ -130,7 +134,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
                     placeholder="Enter description"
                     variant="bordered"
                     name="description"
-                    value={newExpense.description}
+                    value={editedExpense.description}
                     onChange={handleChange}
                     className="w-full"
                   />
@@ -148,11 +152,11 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
               </Button>
               <Button
                 color="primary"
-                onPress={handleAdd}
+                onPress={handleUpdate}
                 isLoading={loading}
                 className="font-medium"
               >
-                Add Expense
+                Update Expense
               </Button>
             </ModalFooter>
           </>
@@ -162,4 +166,4 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
   );
 };
 
-export default AddExpenseForCustomer;
+export default EditExpenseForCustomer;
