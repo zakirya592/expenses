@@ -25,6 +25,7 @@ import EditExpenseForCustomer from './EditExpenseForCustomer';
 import IndexRangeModal from './IndexRangeModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
 // BottomContent component
 function BottomContent({ total, page, setPage }) {
@@ -215,7 +216,7 @@ const CustomerDetails = () => {
       const rows = expenses.map((expense, index) => [
         startIndex + index, // Start numbering from the startIndex
         expense.item || "",
-        new Date(expense.date).toLocaleDateString(),
+        formatDate(expense.date),
         expense.description || "",
         expense.amount || "",
       ]);
@@ -354,7 +355,7 @@ const CustomerDetails = () => {
                 </TableCell>
                 <TableCell>
                   <div>
-                    {new Date(expense.date).toLocaleString()}
+                    {formatDateTime(expense.date)}
                   </div>
                 </TableCell>
                 <TableCell>{expense?.description}</TableCell>

@@ -12,6 +12,7 @@ import {
 import userRequest from "../../utils/userRequest";
 import toast from "react-hot-toast";
 import { FaCalendarAlt } from "react-icons/fa";
+import { formatDate, formatDateTime } from "../../utils/dateUtils";
 
 const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customerName }) => {
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,15 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
     setEditedExpense({
       ...editedExpense,
       [name]: value,
+    });
+  };
+  
+  // Dedicated function to handle date changes
+  const handleDateChange = (e) => {
+    const { value } = e.target;
+    setEditedExpense({
+      ...editedExpense,
+      date: value,
     });
   };
 
@@ -115,19 +125,42 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
                   />
                 </div>
                 <div>
-                  <Input
-                    label="Date"
-                    placeholder="Select date"
-                    variant="bordered"
-                    name="date"
-                    type="date"
-                    value={editedExpense.date}
-                    onChange={handleChange}
-                    className="w-full"
-                    startContent={
-                      <FaCalendarAlt className="text-default-400 pointer-events-none flex-shrink-0" />
-                    }
-                  />
+                  <div className="mb-1">
+                    <span className="text-sm font-medium text-gray-700">Date (dd/mm/yy)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-grow">
+                      <Input
+                        label=""
+                        placeholder="DD/MM/YY"
+                        variant="bordered"
+                        value={editedExpense.date ? formatDate(editedExpense.date) : ""}
+                        className="w-full"
+                        startContent={
+                          <FaCalendarAlt className="text-default-400 pointer-events-none flex-shrink-0" />
+                        }
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <Button
+                        color="primary"
+                        variant="flat"
+                        size="sm"
+                        isIconOnly
+                        onClick={() => document.getElementById("editDatePicker").showPicker()}
+                      >
+                        <FaCalendarAlt />
+                      </Button>
+                      <input
+                        type="date"
+                        id="editDatePicker"
+                        value={editedExpense.date}
+                        onChange={handleDateChange}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <Input

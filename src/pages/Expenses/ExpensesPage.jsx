@@ -18,6 +18,7 @@ import { FaEdit, FaEye, FaSignOutAlt, FaTrash, FaUserPlus } from 'react-icons/fa
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate } from 'react-router-dom';
+import { formatDate } from '../../utils/dateUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import Swal from "sweetalert2";
 import toast from 'react-hot-toast';
@@ -181,7 +182,7 @@ const Expenses = () => {
     const rows = data.map((row, index) => [
       index + 1,
       row.item || "",
-      new Date(row.date).toLocaleDateString(),
+      formatDate(row.date),
       row.description || "",
       row.amount || "",
     ]);
@@ -321,12 +322,12 @@ const Expenses = () => {
                 </TableCell>
                 <TableCell className="font-semibold">
                   <div>
-                    {new Date(customer.createdAt).toLocaleDateString()}
+                    {formatDate(customer.createdAt)}
                   </div>
                 </TableCell>
                 <TableCell className="font-semibold">
                   <div>
-                    {new Date(customer.updatedAt).toLocaleDateString()}
+                    {formatDate(customer.updatedAt)}
                   </div>
                 </TableCell>
                 <TableCell>
