@@ -16,7 +16,7 @@ import {
 import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaFilePdf } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -56,9 +56,14 @@ function BottomContent({ total, page, setPage }) {
 const CustomerDetails = () => {
   const { user, logout } = useAuth();
   const { customerId } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isOrganization = queryParams.get('isOrganization') === 'true';
+  const orgName = queryParams.get('name');
+  
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState(orgName || "");
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showEditExpenseModal, setShowEditExpenseModal] = useState(false);
@@ -70,50 +75,77 @@ const CustomerDetails = () => {
     navigate("/login");
   };
 
-  // Fetch customer details
+  // Fetch customer details or organization details
   const fetchCustomer = async () => {
     try {
-      const res = await userRequest.get(`/customers/${customerId}`);
-      setCustomerName(res.data.data.name);
-      return res.data;
+      if (isOrganization) {
+        // If it's an organization, we already have the name from the URL
+        return { data: { name: orgName || "Organization" } };
+      } else {
+        // Regular customer fetch
+        const res = await userRequest.get(`/customers/${customerId}`);
+        setCustomerName(res.data.data.name);
+        return res.data;
+      }
     } catch (error) {
       toast.error("Failed to fetch customer details");
       return { data: {} };
     }
   };
 
-  // Fetch customer expenses
-  const fetchCustomerExpenses = async () => {
+  // Fetch customer expenses or organization customers
+  const fetchData = async () => {
     try {
-      const url = `/customers/${customerId}/expenses?page=${page}&limit=${limit}`;
-      const res = await userRequest.get(url);
-      return res.data;
+      if (isOrganization) {
+        // Fetch customers for the organization
+        const url = `/customers/organization/${customerId}`;
+        const res = await userRequest.get(url);
+        console.log("Organization customers response:", res.data);
+        return {
+          data: res.data.data || [],
+          total: res.data.total || 0,
+          organization: res.data.organization
+        };
+      } else {
+        // Regular customer expenses fetch
+        const url = `/customers/${customerId}/expenses?page=${page}&limit=${limit}`;
+        const res = await userRequest.get(url);
+        return res.data;
+      }
     } catch (error) {
-      toast.error("Failed to fetch customer expenses");
+      console.error("Failed to fetch data:", error);
+      toast.error(isOrganization ? "Failed to fetch organization customers" : "Failed to fetch customer expenses");
       return { data: [], total: 0, totalAmount: 0 };
     }
   };
 
   const { data: customerData } = useQuery({
-    queryKey: ["customer", customerId],
+    queryKey: ["customer", customerId, isOrganization],
     queryFn: fetchCustomer,
     enabled: !!customerId,
   });
 
   const {
-    data: expensesResponse = { data: [], total: 0, totalAmount: 0 },
+    data: responseData = { data: [], total: 0, totalAmount: 0 },
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["customerExpenses", customerId, page],
-    queryFn: fetchCustomerExpenses,
+    queryKey: ["customerData", customerId, page, isOrganization],
+    queryFn: fetchData,
     enabled: !!customerId,
     keepPreviousData: true,
   });
 
-  const expensesData = expensesResponse.data || [];
-  const total = expensesResponse.total || 0;
-  const totalAmount = expensesResponse.totalAmount || 0;
+  // Set organization name if available in the response
+  useEffect(() => {
+    if (isOrganization && responseData.organization && !orgName) {
+      setCustomerName(responseData.organization);
+    }
+  }, [responseData, isOrganization, orgName]);
+
+  const tableData = responseData.data || [];
+  const total = responseData.total || 0;
+  const totalAmount = responseData.totalAmount || 0;
 
   const handleEditExpense = (expense) => {
     setSelectedExpense(expense);
@@ -255,10 +287,10 @@ const CustomerDetails = () => {
           </h1>
           <div className="flex items-center gap-2 sm:gap-4">
             <button
-              onClick={() => navigate('/customers')}
+              onClick={() => isOrganization ? navigate('/organizations') : navigate('/customers')}
               className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow"
             >
-              All Customers
+              {isOrganization ? 'All Organizations' : 'All Customers'}
             </button>
             <button
               onClick={handleLogout}
@@ -280,59 +312,76 @@ const CustomerDetails = () => {
               color="default"
               variant="light"
               aria-label="Back"
-              onClick={() => navigate('/customers')}
+              onClick={() => isOrganization ? navigate('/organizations') : navigate('/customers')}
             >
               <FaArrowLeft />
             </Button>
             <div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">{customerName}</h1>
-              <p className="text-sm text-gray-600">Customer Expenses</p>
+              <p className="text-sm text-gray-600">
+                {isOrganization ? 'Organization Customers' : 'Customer Expenses'}
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-4">
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                size="sm"
-                color="success" 
-                startContent={<FaPlus />}
-                onPress={() => setShowAddExpenseModal(true)}
-              >
-                Add Expense
-              </Button>
-              <Button 
-                size="sm"
-                color="primary" 
-                startContent={<FaFilePdf />}
-                onPress={() => setShowIndexRangeModal(true)}
-              >
-                Generate PDF
-              </Button>
-            </div>
-            <div className="text-start">
-              <div className="text-xs sm:text-sm text-gray-600">Total Expenses</div>
-              <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
-                Rs. {totalAmount.toFixed(2)}
+            {!isOrganization && (
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  size="sm"
+                  color="success" 
+                  startContent={<FaPlus />}
+                  onPress={() => setShowAddExpenseModal(true)}
+                >
+                  Add Expense
+                </Button>
+                <Button 
+                  size="sm"
+                  color="primary" 
+                  startContent={<FaFilePdf />}
+                  onPress={() => setShowIndexRangeModal(true)}
+                >
+                  Generate PDF
+                </Button>
               </div>
-            </div>
+            )}
+            {!isOrganization && (
+              <div className="text-start">
+                <div className="text-xs sm:text-sm text-gray-600">Total Expenses</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
+                  Rs. {totalAmount.toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Expenses Table */}
+        {/* Table */}
         <div className="max-w-full overflow-x-auto">
           <Table
-            aria-label="Customer expenses table"
+            aria-label={isOrganization ? "Organization customers table" : "Customer expenses table"}
             className="h-[400px] overflow-y-auto"
             classNames={{
               wrapper: "min-w-[800px]" // Ensures table has minimum width for scrolling on small screens
             }}
           >
             <TableHeader>
-              <TableColumn className="text-xs sm:text-sm">Sl No</TableColumn>
-              <TableColumn className="text-xs sm:text-sm">ITEM</TableColumn>
-              <TableColumn className="text-xs sm:text-sm">DATE & TIME</TableColumn>
-              <TableColumn className="text-xs sm:text-sm">DESCRIPTION</TableColumn>
-              <TableColumn className="text-xs sm:text-sm">AMOUNT</TableColumn>
-              <TableColumn className="text-xs sm:text-sm">ACTIONS</TableColumn>
+              {isOrganization ? (
+                <>
+                  <TableColumn className="text-xs sm:text-sm">Sl No</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">NAME</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">CREATED DATE</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">UPDATED DATE</TableColumn>
+                </>
+              ) : (
+                <>
+                  <TableColumn className="text-xs sm:text-sm">Sl No</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">ITEM</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">DATE & TIME</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">DESCRIPTION</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">AMOUNT</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">ACTIONS</TableColumn>
+                </>
+              )}
             </TableHeader>
           <TableBody
             isLoading={isLoading}
@@ -343,82 +392,111 @@ const CustomerDetails = () => {
             }
             emptyContent={
               <div className="text-center text-gray-500 py-8">
-                No expenses found for this customer
+                {isOrganization ? 'No customers found for this organization' : 'No expenses found for this customer'}
               </div>
             }
           >
-            {expensesData.map((expense, index) => (
-              <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell className="font-mono font-semibold">
-                  {expense.item}
-                </TableCell>
-                <TableCell>
-                  <div>
-                    {formatDateTime(expense.date)}
-                  </div>
-                </TableCell>
-                <TableCell>{expense?.description}</TableCell>
-                <TableCell className="font-semibold">
-                  {expense.amount}
-                </TableCell>
-                <TableCell>
-                  <div className="relative flex items-center gap-1 flex-wrap">
-                    <Tooltip content="Edit Expense">
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="warning"
-                        isIconOnly
-                        className="min-w-0 sm:min-w-unit-10"
-                        onPress={() => handleEditExpense(expense)}
-                      >
-                        <FaEdit className="text-xs sm:text-sm" />
-                        <span className="hidden sm:inline ml-1">Edit</span>
-                      </Button>
-                    </Tooltip>
-                    <Tooltip color="danger" content="Delete Expense">
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        isIconOnly
-                        className="min-w-0 sm:min-w-unit-10"
-                        onPress={() => handleDeleteExpense(expense)}
-                      >
-                        <FaTrash className="text-xs sm:text-sm" />
-                        <span className="hidden sm:inline ml-1">Delete</span>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {isOrganization ? (
+              // Organization customers table
+              tableData.map((customer, index) => (
+                <TableRow key={customer._id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell className="font-mono font-semibold">
+                    {customer.name}
+                  </TableCell>
+                  <TableCell className="font-semibold">
+                    <div>
+                      {formatDate(customer.createdAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-semibold">
+                    <div>
+                      {formatDate(customer.updatedAt)}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              // Customer expenses table
+              tableData.map((expense, index) => (
+                <TableRow key={expense._id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell className="font-mono font-semibold">
+                    {expense.item}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      {formatDateTime(expense.date)}
+                    </div>
+                  </TableCell>
+                  <TableCell>{expense?.description}</TableCell>
+                  <TableCell className="font-semibold">
+                    {expense.amount}
+                  </TableCell>
+                  <TableCell>
+                    <div className="relative flex items-center gap-1 flex-wrap">
+                      <Tooltip content="Edit Expense">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="warning"
+                          isIconOnly
+                          className="min-w-0 sm:min-w-unit-10"
+                          onPress={() => handleEditExpense(expense)}
+                        >
+                          <FaEdit className="text-xs sm:text-sm" />
+                          <span className="hidden sm:inline ml-1">Edit</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip color="danger" content="Delete Expense">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          isIconOnly
+                          className="min-w-0 sm:min-w-unit-10"
+                          onPress={() => handleDeleteExpense(expense)}
+                        >
+                          <FaTrash className="text-xs sm:text-sm" />
+                          <span className="hidden sm:inline ml-1">Delete</span>
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
           </Table>
         </div>
         <BottomContent total={total} page={page} setPage={setPage} />
       </div>
-      <AddExpenseForCustomer
-        isOpen={showAddExpenseModal}
-        onClose={() => setShowAddExpenseModal(false)}
-        apirefetch={refetch}
-        customerId={customerId}
-        customerName={customerName}
-      />
-      <EditExpenseForCustomer
-        isOpen={showEditExpenseModal}
-        onClose={() => setShowEditExpenseModal(false)}
-        apirefetch={refetch}
-        expense={selectedExpense}
-        customerName={customerName}
-      />
-      <IndexRangeModal
-        isOpen={showIndexRangeModal}
-        onClose={() => setShowIndexRangeModal(false)}
-        onGenerate={generatePDF}
-        maxIndex={total}
-      />
+      
+      {/* Only show these modals for customer expenses view, not organization customers view */}
+      {!isOrganization && (
+        <>
+          <AddExpenseForCustomer
+            isOpen={showAddExpenseModal}
+            onClose={() => setShowAddExpenseModal(false)}
+            apirefetch={refetch}
+            customerId={customerId}
+            customerName={customerName}
+          />
+          <EditExpenseForCustomer
+            isOpen={showEditExpenseModal}
+            onClose={() => setShowEditExpenseModal(false)}
+            apirefetch={refetch}
+            expense={selectedExpense}
+            customerName={customerName}
+          />
+          <IndexRangeModal
+            isOpen={showIndexRangeModal}
+            onClose={() => setShowIndexRangeModal(false)}
+            onGenerate={generatePDF}
+            maxIndex={total}
+          />
+        </>
+      )}
     </div>
   );
 };

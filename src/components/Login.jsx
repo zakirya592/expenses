@@ -11,7 +11,7 @@ const Login = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      navigator('/expenses');
+      navigator('/organizations');
     }
   }, [navigator]);
   const [password, setPassword] = useState('');
@@ -34,7 +34,7 @@ const Login = () => {
      
     setLoading(false);
     if (success === true) {
-      navigator("/expenses");
+      navigator("/organizations");
     } else {
       setError("Invalid email or password");
     }
