@@ -12,21 +12,207 @@ import {
   Spinner,
   Tooltip,
   Pagination,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
 } from '@nextui-org/react';
-import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaFilePdf } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaFilePdf, FaEye } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import userRequest from '../../utils/userRequest';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import AddExpenseForCustomer from './AddExpenseForCustomer';
+import AddExpenseForCustomer from './AddExpenseForCustomer'; 
 import EditExpenseForCustomer from './EditExpenseForCustomer';
 import IndexRangeModal from './IndexRangeModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
+// EditCustomer component
+const EditCustomer = ({ isOpen, onClose, apirefetch, customer }) => {
+  const [loading, setLoading] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+
+  useEffect(() => {
+    if (customer) {
+      setCustomerName(customer.name || "");
+    }
+  }, [customer]);
+
+  const handleUpdate = async () => {
+    if (!customerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await userRequest.put(`/customers/${customer._id}`, {
+        name: customerName,
+        organization: customer.organization
+      });
+      setLoading(false);
+      toast.success("Customer updated successfully!");
+      // Ensure refetch happens before closing the modal
+      if (apirefetch) {
+        await apirefetch();
+      }
+      onClose(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to update customer."
+      );
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      placement="center"
+      className="bg-white dark:bg-gray-800"
+    >
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col gap-1 text-xl font-bold">
+              Edit Customer
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <div>
+                  <Input
+                    autoFocus
+                    label="Customer Name"
+                    placeholder="Enter customer name"
+                    variant="bordered"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={onClose}
+                className="font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleUpdate}
+                isLoading={loading}
+                className="font-medium"
+              >
+                Update Customer
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// AddCustomerToOrganization component
+const AddCustomerToOrganization = ({ isOpen, onClose, apirefetch, organizationId, organizationName }) => {
+  const [loading, setLoading] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+
+  const handleAdd = async () => {
+    if (!customerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await userRequest.post("/customers", {
+        name: customerName,
+        organization: organizationId
+      });
+      setCustomerName("");
+      setLoading(false);
+      toast.success("Customer added successfully!");
+      // Ensure refetch happens before closing the modal
+      if (apirefetch) {
+        await apirefetch();
+      }
+      onClose(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to add customer."
+      );
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      placement="center"
+      className="bg-white dark:bg-gray-800"
+    >
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col gap-1 text-xl font-bold">
+              Add New Customer to {organizationName}
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <div>
+                  <Input
+                    autoFocus
+                    label="Customer Name"
+                    placeholder="Enter customer name"
+                    variant="bordered"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={onClose}
+                className="font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleAdd}
+                isLoading={loading}
+                className="font-medium"
+              >
+                Add Customer
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+};
 // BottomContent component
 function BottomContent({ total, page, setPage }) {
   if (!total) return null;
@@ -68,6 +254,9 @@ const CustomerDetails = () => {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showEditExpenseModal, setShowEditExpenseModal] = useState(false);
   const [showIndexRangeModal, setShowIndexRangeModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -175,6 +364,41 @@ const CustomerDetails = () => {
         }
       }
     });
+  };
+  
+  // Functions for customer management in organization view
+  const handleEditCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    setShowEditCustomerModal(true);
+  };
+
+  const handleDeleteCustomer = (customer) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: `You will not be able to recover this customer: ${customer?.name || ""}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await userRequest.delete(`/customers/${customer?._id || ""}`);
+          toast.success("The customer has been deleted.");
+          refetch();
+        } catch (error) {
+          toast.error(
+            error?.response?.data?.message || "Failed to delete the customer."
+          );
+        }
+      }
+    });
+  };
+  
+  const handleViewCustomerExpenses = (customerId) => {
+    navigate(`/customer-details/${customerId}`);
   };
   
   const fetchAllExpenses = async () => {
@@ -324,7 +548,18 @@ const CustomerDetails = () => {
             </div>
           </div>
           <div className="flex flex-wrap justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-4">
-            {!isOrganization && (
+            {isOrganization ? (
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  size="sm"
+                  color="success" 
+                  startContent={<FaPlus />}
+                  onPress={() => setShowAddCustomerModal(true)}
+                >
+                  Add New Customer
+                </Button>
+              </div>
+            ) : (
               <div className="flex flex-wrap gap-2">
                 <Button 
                   size="sm"
@@ -371,6 +606,7 @@ const CustomerDetails = () => {
                   <TableColumn className="text-xs sm:text-sm">NAME</TableColumn>
                   <TableColumn className="text-xs sm:text-sm">CREATED DATE</TableColumn>
                   <TableColumn className="text-xs sm:text-sm">UPDATED DATE</TableColumn>
+                  <TableColumn className="text-xs sm:text-sm">ACTIONS</TableColumn>
                 </>
               ) : (
                 <>
@@ -412,6 +648,49 @@ const CustomerDetails = () => {
                   <TableCell className="font-semibold">
                     <div>
                       {formatDate(customer.updatedAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="relative flex items-center gap-1 flex-wrap">
+                      <Tooltip content="View Expenses">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          isIconOnly
+                          className="min-w-0 sm:min-w-unit-10"
+                          onPress={() => handleViewCustomerExpenses(customer._id)}
+                        >
+                          <FaEye className="text-xs sm:text-sm" />
+                          <span className="hidden sm:inline ml-1">View</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Edit Customer">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="warning"
+                          isIconOnly
+                          className="min-w-0 sm:min-w-unit-10"
+                          onPress={() => handleEditCustomer(customer)}
+                        >
+                          <FaEdit className="text-xs sm:text-sm" />
+                          <span className="hidden sm:inline ml-1">Edit</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip color="danger" content="Delete Customer">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          isIconOnly
+                          className="min-w-0 sm:min-w-unit-10"
+                          onPress={() => handleDeleteCustomer(customer)}
+                        >
+                          <FaTrash className="text-xs sm:text-sm" />
+                          <span className="hidden sm:inline ml-1">Delete</span>
+                        </Button>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -495,6 +774,27 @@ const CustomerDetails = () => {
             onGenerate={generatePDF}
             maxIndex={total}
           />
+        </>
+      )}
+      
+      {/* Add Customer to Organization modal */}
+      {isOrganization && (
+        <>
+          <AddCustomerToOrganization
+            isOpen={showAddCustomerModal}
+            onClose={() => setShowAddCustomerModal(false)}
+            apirefetch={refetch}
+            organizationId={customerId}
+            organizationName={customerName}
+          />
+          {selectedCustomer && (
+            <EditCustomer
+              isOpen={showEditCustomerModal}
+              onClose={() => setShowEditCustomerModal(false)}
+              apirefetch={refetch}
+              customer={selectedCustomer}
+            />
+          )}
         </>
       )}
     </div>
