@@ -34,7 +34,7 @@ import autoTable from 'jspdf-autotable';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
 // EditCustomer component
-const EditCustomer = ({ isOpen, onClose, apirefetch, customer }) => {
+const EditCustomer = ({ isOpen, onClose, apirefetch, customer, onTotalUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [customerName, setCustomerName] = useState("");
 
@@ -61,6 +61,10 @@ const EditCustomer = ({ isOpen, onClose, apirefetch, customer }) => {
       // Ensure refetch happens before closing the modal
       if (apirefetch) {
         await apirefetch();
+      }
+      // Update organization total expenses
+      if (onTotalUpdate) {
+        onTotalUpdate();
       }
       onClose(false);
     } catch (error) {
@@ -127,7 +131,7 @@ const EditCustomer = ({ isOpen, onClose, apirefetch, customer }) => {
 };
 
 // AddCustomerToOrganization component
-const AddCustomerToOrganization = ({ isOpen, onClose, apirefetch, organizationId, organizationName }) => {
+const AddCustomerToOrganization = ({ isOpen, onClose, apirefetch, organizationId, organizationName, onTotalUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [customerName, setCustomerName] = useState("");
 
@@ -149,6 +153,10 @@ const AddCustomerToOrganization = ({ isOpen, onClose, apirefetch, organizationId
       // Ensure refetch happens before closing the modal
       if (apirefetch) {
         await apirefetch();
+      }
+      // Update organization total expenses
+      if (onTotalUpdate) {
+        onTotalUpdate();
       }
       onClose(false);
     } catch (error) {
@@ -257,6 +265,7 @@ const CustomerDetails = () => {
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+  const [organizationTotal, setOrganizationTotal] = useState({ total: 0, count: 0 });
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -279,6 +288,24 @@ const CustomerDetails = () => {
     } catch (error) {
       toast.error("Failed to fetch customer details");
       return { data: {} };
+    }
+  };
+  
+  // Fetch organization total expenses
+  const fetchOrganizationTotal = async () => {
+    if (!isOrganization || !customerId) return;
+    
+    try {
+      const response = await userRequest.get(`/expenses/total?organizationId=${customerId}`);
+      console.log("Organization total expenses:", response.data);
+      if (response.data && response.data.data) {
+        setOrganizationTotal({
+          total: response.data.data.total || 0,
+          count: response.data.data.count || 0
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching organization total expenses:", error);
     }
   };
 
@@ -331,6 +358,13 @@ const CustomerDetails = () => {
       setCustomerName(responseData.organization);
     }
   }, [responseData, isOrganization, orgName]);
+  
+  // Fetch organization total expenses when component mounts or customerId changes
+  useEffect(() => {
+    if (isOrganization && customerId) {
+      fetchOrganizationTotal();
+    }
+  }, [isOrganization, customerId]);
 
   const tableData = responseData.data || [];
   const total = responseData.total || 0;
@@ -387,7 +421,8 @@ const CustomerDetails = () => {
         try {
           await userRequest.delete(`/customers/${customer?._id || ""}`);
           toast.success("The customer has been deleted.");
-          refetch();
+          await refetch();
+          fetchOrganizationTotal();
         } catch (error) {
           toast.error(
             error?.response?.data?.message || "Failed to delete the customer."
@@ -579,11 +614,21 @@ const CustomerDetails = () => {
                 </Button>
               </div>
             )}
-            {!isOrganization && (
+            {!isOrganization ? (
               <div className="text-start">
                 <div className="text-xs sm:text-sm text-gray-600">Total Expenses</div>
                 <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
                   Rs. {totalAmount.toFixed(2)}
+                </div>
+              </div>
+            ) : (
+              <div className="text-start">
+                <div className="text-xs sm:text-sm text-gray-600">Organization Total Expenses</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
+                  Rs. {organizationTotal.total.toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Count: {organizationTotal.count}
                 </div>
               </div>
             )}
@@ -786,6 +831,7 @@ const CustomerDetails = () => {
             apirefetch={refetch}
             organizationId={customerId}
             organizationName={customerName}
+            onTotalUpdate={fetchOrganizationTotal}
           />
           {selectedCustomer && (
             <EditCustomer
@@ -793,6 +839,7 @@ const CustomerDetails = () => {
               onClose={() => setShowEditCustomerModal(false)}
               apirefetch={refetch}
               customer={selectedCustomer}
+              onTotalUpdate={fetchOrganizationTotal}
             />
           )}
         </>
