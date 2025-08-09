@@ -20,7 +20,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
     item: "",
     amount: "",
     description: "",
-    date: new Date().toISOString().split('T')[0], // Default to current date in YYYY-MM-DD format
+    date: formatDate(new Date()), // Default to current date in DD/MM/YY format
   });
 
   const handleChange = (e) => {
@@ -31,14 +31,7 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
     });
   };
   
-  // Dedicated function to handle date changes
-  const handleDateChange = (e) => {
-    const { value } = e.target;
-    setNewExpense({
-      ...newExpense,
-      date: value,
-    });
-  };
+  // We no longer need a dedicated date change handler as we're using the regular handleChange
 
   const handleAdd = async () => {
     if (!newExpense.item.trim()) {
@@ -53,24 +46,19 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
 
     setLoading(true);
     try {
-      // Create a full datetime with current time
-      const now = new Date();
-      const selectedDate = new Date(newExpense.date);
-      // Set the hours, minutes, seconds from current time to the selected date
-      selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-      
+      // Send the date directly as a string without conversion
       await userRequest.post("/expenses", {
         item: newExpense.item,
         amount: newExpense.amount,
         description: newExpense.description,
         customer: customerId,
-        date: selectedDate.toISOString(), // Send as ISO string with current time
+        date: newExpense.date, // Send as string directly
       });
       setNewExpense({
         item: "",
         amount: "",
         description: "",
-        date: new Date().toISOString().split('T')[0],
+        date: formatDate(new Date()),
       });
       onClose(false);
       setLoading(false);
@@ -122,38 +110,21 @@ const AddExpenseForCustomer = ({ isOpen, onClose, apirefetch, customerId, custom
                 </div>
                 <div>
                   <div className="mb-1">
-                    <span className="text-sm font-medium text-gray-700">Date (dd/mm/yy)</span>
+                    <span className="text-sm font-medium text-gray-700">Date (DD-MM-YY)</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex-grow">
                       <Input
                         label=""
-                        placeholder="DD/MM/YY"
+                        placeholder="DD-MM-YY"
                         variant="bordered"
-                        value={newExpense.date ? formatDate(newExpense.date) : ""}
+                        name="date"
+                        value={newExpense.date}
+                        onChange={handleChange}
                         className="w-full"
                         startContent={
                           <FaCalendarAlt className="text-default-400 pointer-events-none flex-shrink-0" />
                         }
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <Button
-                        color="primary"
-                        variant="flat"
-                        size="sm"
-                        isIconOnly
-                        onClick={() => document.getElementById("datePicker").showPicker()}
-                      >
-                        <FaCalendarAlt />
-                      </Button>
-                      <input
-                        type="date"
-                        id="datePicker"
-                        value={newExpense.date}
-                        onChange={handleDateChange}
-                        className="hidden"
                       />
                     </div>
                   </div>

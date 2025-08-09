@@ -20,7 +20,7 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
     item: "",
     amount: "",
     description: "",
-    date: new Date().toISOString().split('T')[0],
+    date: formatDate(new Date()),
   });
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
         item: expense.item || "",
         amount: expense.amount || "",
         description: expense.description || "",
-        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        date: expense.date ? formatDate(new Date(expense.date)) : formatDate(new Date()),
       });
     }
   }, [expense]);
@@ -42,14 +42,7 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
     });
   };
   
-  // Dedicated function to handle date changes
-  const handleDateChange = (e) => {
-    const { value } = e.target;
-    setEditedExpense({
-      ...editedExpense,
-      date: value,
-    });
-  };
+  // We no longer need a dedicated date change handler as we're using the regular handleChange
 
   const handleUpdate = async () => {
     if (!editedExpense.item.trim()) {
@@ -64,17 +57,12 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
 
     setLoading(true);
     try {
-      // Create a full datetime with current time
-      const now = new Date();
-      const selectedDate = new Date(editedExpense.date);
-      // Set the hours, minutes, seconds from current time to the selected date
-      selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-      
+      // Send the date directly as a string without conversion
       await userRequest.put(`/expenses/${expense._id}`, {
         item: editedExpense.item,
         amount: editedExpense.amount,
         description: editedExpense.description,
-        date: selectedDate.toISOString(), // Send as ISO string with current time
+        date: editedExpense.date, // Send as string directly
       });
       onClose(false);
       setLoading(false);
@@ -126,38 +114,21 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
                 </div>
                 <div>
                   <div className="mb-1">
-                    <span className="text-sm font-medium text-gray-700">Date (dd/mm/yy)</span>
+                    <span className="text-sm font-medium text-gray-700">Date (DD-MM-YY)</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex-grow">
                       <Input
                         label=""
-                        placeholder="DD/MM/YY"
+                        placeholder="DD-MM-YY"
                         variant="bordered"
-                        value={editedExpense.date ? formatDate(editedExpense.date) : ""}
+                        name="date"
+                        value={editedExpense.date}
+                        onChange={handleChange}
                         className="w-full"
                         startContent={
                           <FaCalendarAlt className="text-default-400 pointer-events-none flex-shrink-0" />
                         }
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <Button
-                        color="primary"
-                        variant="flat"
-                        size="sm"
-                        isIconOnly
-                        onClick={() => document.getElementById("editDatePicker").showPicker()}
-                      >
-                        <FaCalendarAlt />
-                      </Button>
-                      <input
-                        type="date"
-                        id="editDatePicker"
-                        value={editedExpense.date}
-                        onChange={handleDateChange}
-                        className="hidden"
                       />
                     </div>
                   </div>
