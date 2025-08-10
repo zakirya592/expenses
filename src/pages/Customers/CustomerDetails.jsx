@@ -522,14 +522,12 @@ const CustomerDetails = () => {
         styles: { fontSize: 10, cellPadding: 3 },
       });
       
-      // Open PDF in new tab
-      const blob = doc.output("blob");
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 10000); // revoke after 10s
+      // Download PDF directly
+      const filename = `${customerName}_Expenses_${startIndex}-${endIndex}.pdf`;
+      doc.save(filename);
       
       toast.dismiss(loadingToast);
-      toast.success("PDF generated successfully");
+      toast.success("PDF downloaded successfully");
     } catch (error) {
       toast.error("Failed to generate PDF");
       console.error("PDF generation error:", error);
