@@ -29,7 +29,7 @@ const EditExpenseForCustomer = ({ isOpen, onClose, apirefetch, expense, customer
         item: expense.item || "",
         amount: expense.amount || "",
         description: expense.description || "",
-        date: expense.date ? formatDate(new Date(expense.date)) : formatDate(new Date()),
+        date: expense.date || formatDate(new Date()),
       });
     }
   }, [expense]);
